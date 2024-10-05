@@ -1,5 +1,7 @@
 package com.example;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
@@ -10,6 +12,8 @@ import java.io.IOException;
 import java.nio.*;
 
 import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -18,11 +22,16 @@ public class App {
     private long _window;
     private int _shaderProgram;
     private int _vbo;
+    private int _ibo;
+
+    // Kamera
+    private Camera camera;
+    private int[] _indices;
 
     public void run() {
         init();
         loop();
-        // Při zrušení loopu:
+        // Po zrušení loopu:
 
         // Uvolnění bufferů
         glDeleteBuffers(_vbo);
@@ -55,7 +64,6 @@ public class App {
             IntBuffer pHeight = stack.mallocInt(1);
 
             glfwGetWindowSize(_window, pWidth, pHeight);
-
             GLFWVidMode vidMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
             glfwSetWindowPos(_window,
@@ -63,15 +71,21 @@ public class App {
                     (vidMode.height() - pHeight.get(0)) / 2);
         }
 
+        // Inicializace kamery
+        camera = new Camera(
+                new Vector3f(0.0f, 0.0f, 3.0f), // pozice kamery
+                new Vector3f(0.0f, 0.0f, -1.0f), // směr kamery
+                new Vector3f(0.0f, 1.0f, 0.0f), // up vektor
+                800, 600 // rozměry okna
+        );
+
         glfwMakeContextCurrent(_window); // Nastavení aktivního okna pro GLFW
-
         glfwSwapInterval(1); // Povolení vertikální synchronizace
-
         glfwShowWindow(_window); // Zobrazení okna
 
         GL.createCapabilities(); // Inicializace OpenGL
 
-        setupKeyCallback();
+        setupKeyCallback(); // Nastavení input callbacků
 
         try {
             _shaderProgram = createShaderProgram();
@@ -79,42 +93,81 @@ public class App {
             e.printStackTrace();
         }
 
+        // Definice vrcholů jehlanu
+        float[] vertices = {
+                // Pozice // Barva
+                0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
+                -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
+                0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Vrchol 3
+                0.0f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f // Vrchol 4
+        };
+
+        // Definice indexů jehlanu
+        _indices = new int[] {
+                0, 1, 2, // První trojúhelník
+                0, 2, 3, // Druhý trojúhelník
+                0, 3, 1, // Třetí trojúhelník
+                1, 2, 3 // Čtvrtý trojúhelník
+        };
+
+        // Vytvoření vertex buffer objektu (VBO)
+        _vbo = glGenBuffers(); // Vytvoří VBO
+        glBindBuffer(GL_ARRAY_BUFFER, _vbo); // Připojí VBO
+        FloatBuffer vertexBuffer = MemoryUtil.memAllocFloat(vertices.length); // Alokuje paměť
+        vertexBuffer.put(vertices).flip(); // Vloží data o vrcholech do bufferu
+        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW); // Nahraje data z bufferu do GPU
+        MemoryUtil.memFree(vertexBuffer); // Uvolní paměť
+
+        // Vytvoření index buffer objektu IBO
+        _ibo = glGenBuffers();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
+        IntBuffer indexBuffer = MemoryUtil.memAllocInt(_indices.length);
+        indexBuffer.put(_indices).flip();
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
+        MemoryUtil.memFree(indexBuffer);
+
+        // Nastavení atributů
+        // Pozice: nastavuje typy, offsety, velikosti,..
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * Float.BYTES, 0);
+        glEnableVertexAttribArray(0);
+        // Barva: nastavuje typy, offsety, velikosti,..
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
+        glEnableVertexAttribArray(1);
+
     }
 
     // Hlavní smyčka
     private void loop() {
+        float lastFrameTime = 0.0f;
+
         while (!glfwWindowShouldClose(_window)) {
+
+            // Delta času
+            float currentFrameTime = (float) glfwGetTime();
+            float deltaTime = currentFrameTime - lastFrameTime;
+            lastFrameTime = currentFrameTime;
+
+            // Zpracování vstupů kamery
+            camera.processInputs(_window, deltaTime);
+
             // Vykreslování
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // Nastavení barvy pozadí
-            glClear(GL_COLOR_BUFFER_BIT); // Vymazání obrazovky
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Vymazání obrazovky
 
             // Aktivace shaderového programu
             glUseProgram(_shaderProgram);
 
-            // Definice vrcholů trojúhelníku
-            float[] vertices = {
-                    // Pozice // Barva
-                    0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
-                    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
-                    0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f // Vrchol 3
-            };
+            // Připojí VBO a IBO
+            glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
 
-            // Vytvoření vertex buffer objektu (VBO)
-            _vbo = glGenBuffers(); // Vytvoří VBO
-            glBindBuffer(GL_ARRAY_BUFFER, _vbo); // Připojí VBO
-            FloatBuffer vertexBuffer = MemoryUtil.memAllocFloat(vertices.length); // Alokuje paměť
-            vertexBuffer.put(vertices).flip(); // Vloží data o vrcholech do bufferu
-            glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW); // Nahraje data z bufferu do GPU
-            MemoryUtil.memFree(vertexBuffer); // Uvolní paměť
+            glEnable(GL_DEPTH_TEST); // Povolení hloubkového testu
 
-            // Nastavení atributů
-            glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * Float.BYTES, 0); // Pozice: nastavuje typy, offsety, velikosti,..
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 3, GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES); // Barva: nastavuje typy, offsety, velikosti,..
-            glEnableVertexAttribArray(1);
+            // Nastavení kamery - předání matic do shaderu
+            camera.setCameraMatrix(70.0f, 0.1f, 100.0f, _shaderProgram, "camMatrix");
 
-            // Vykreslení trojúhelníku
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            // Vykreslení jehlanu
+            glDrawElements(GL_TRIANGLES, _indices.length, GL_UNSIGNED_INT, 0);
 
             // Přepínání bufferů
             glfwSwapBuffers(_window);
@@ -142,8 +195,8 @@ public class App {
 
     // Vytvoří a vrátí shader program z shader souborů
     private int createShaderProgram() throws IOException {
-        int vertexShader = loadShader("shaders/vertex_shader.vert", GL_VERTEX_SHADER);
-        int fragmentShader = loadShader("shaders/fragment_shader.frag", GL_FRAGMENT_SHADER);
+        int vertexShader = loadShaderFromPath("shaders/vertex_shader.vert", GL_VERTEX_SHADER);
+        int fragmentShader = loadShaderFromPath("shaders/fragment_shader.frag", GL_FRAGMENT_SHADER);
 
         int shaderProgram = glCreateProgram();
         glAttachShader(shaderProgram, vertexShader);
@@ -157,10 +210,10 @@ public class App {
     }
 
     // Načtení shaderu ze souboru
-    private int loadShader(String file, int type) throws IOException {
+    private int loadShaderFromPath(String filePath, int type) throws IOException {
         // Čte a ukládá zdrojový kód souboru shaderu řádek po řádku
         StringBuilder shaderSource = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 shaderSource.append(line).append("\n");

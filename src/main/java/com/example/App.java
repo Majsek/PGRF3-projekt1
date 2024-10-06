@@ -18,15 +18,17 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
+import com.example.objects.Mesh;
+
 public class App {
     private long _window;
     private int _shaderProgram;
-    private int _vbo;
-    private int _ibo;
+    private Mesh _mesh1;
+    private Mesh _mesh2;
+    private IBO _ibo;
 
     // Kamera
     private Camera camera;
-    private int[] _indices;
 
     public void run() {
         init();
@@ -34,7 +36,8 @@ public class App {
         // Po zrušení loopu:
 
         // Uvolnění bufferů
-        glDeleteBuffers(_vbo);
+        _mesh1.cleanup();
+        _mesh2.cleanup();
 
         // Uvolnění okna a terminace GLFW
         glfwDestroyWindow(_window);
@@ -94,7 +97,7 @@ public class App {
         }
 
         // Definice vrcholů jehlanu
-        float[] vertices = {
+        float[] vertices1 = {
                 // Pozice // Barva
                 0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
                 -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
@@ -102,38 +105,33 @@ public class App {
                 0.0f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f // Vrchol 4
         };
 
+        // Definice vrcholů jehlanu
+        float[] vertices2 = {
+                // Pozice // Barva
+                1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
+                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
+                1.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Vrchol 3
+                1.0f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f // Vrchol 4
+        };
+
         // Definice indexů jehlanu
-        _indices = new int[] {
+        int[] indices1 = new int[] {
                 0, 1, 2, // První trojúhelník
                 0, 2, 3, // Druhý trojúhelník
                 0, 3, 1, // Třetí trojúhelník
                 1, 2, 3 // Čtvrtý trojúhelník
         };
 
+        int[] indices2 = new int[] {
+            0, 1, 3, // První trojúhelník
+            2, 1, 3, // Druhý trojúhelník
+            2, 3, 1, // Třetí trojúhelník
+            1, 2, 3 // Čtvrtý trojúhelník
+    };
+
         // Vytvoření vertex buffer objektu (VBO)
-        _vbo = glGenBuffers(); // Vytvoří VBO
-        glBindBuffer(GL_ARRAY_BUFFER, _vbo); // Připojí VBO
-        FloatBuffer vertexBuffer = MemoryUtil.memAllocFloat(vertices.length); // Alokuje paměť
-        vertexBuffer.put(vertices).flip(); // Vloží data o vrcholech do bufferu
-        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW); // Nahraje data z bufferu do GPU
-        MemoryUtil.memFree(vertexBuffer); // Uvolní paměť
-
-        // Vytvoření index buffer objektu IBO
-        _ibo = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
-        IntBuffer indexBuffer = MemoryUtil.memAllocInt(_indices.length);
-        indexBuffer.put(_indices).flip();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
-        MemoryUtil.memFree(indexBuffer);
-
-        // Nastavení atributů
-        // Pozice: nastavuje typy, offsety, velikosti,..
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * Float.BYTES, 0);
-        glEnableVertexAttribArray(0);
-        // Barva: nastavuje typy, offsety, velikosti,..
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
-        glEnableVertexAttribArray(1);
-
+        _mesh1 = new Mesh(vertices1, indices1);// Vytvoří VBO
+        _mesh2 = new Mesh(vertices2, indices2);// Vytvoří VBO
     }
 
     // Hlavní smyčka
@@ -156,23 +154,19 @@ public class App {
 
             // Aktivace shaderového programu
             glUseProgram(_shaderProgram);
-
-            // Připojí VBO a IBO
-            glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo);
-
+            
             glEnable(GL_DEPTH_TEST); // Povolení hloubkového testu
-
+            
             // Nastavení kamery - předání matic do shaderu
             camera.setCameraMatrix(70.0f, 0.1f, 100.0f, _shaderProgram, "camMatrix");
-
+            
             // Vykreslení jehlanu
-            glDrawElements(GL_TRIANGLES, _indices.length, GL_UNSIGNED_INT, 0);
+            _mesh1.draw();
+            _mesh2.draw();
 
             // Přepínání bufferů
             glfwSwapBuffers(_window);
             glfwPollEvents();
-
         }
     }
 

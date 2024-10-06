@@ -18,6 +18,7 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
+import com.example.objects.Cube;
 import com.example.objects.Mesh;
 
 public class App {
@@ -96,42 +97,9 @@ public class App {
             e.printStackTrace();
         }
 
-        // Definice vrcholů jehlanu
-        float[] vertices1 = {
-                // Pozice // Barva
-                0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
-                -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
-                0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Vrchol 3
-                0.0f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f // Vrchol 4
-        };
-
-        // Definice vrcholů jehlanu
-        float[] vertices2 = {
-                // Pozice // Barva
-                1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, // Vrchol 1
-                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Vrchol 2
-                1.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Vrchol 3
-                1.0f, -0.5f, 0.5f, 0.0f, 1.0f, 1.0f // Vrchol 4
-        };
-
-        // Definice indexů jehlanu
-        int[] indices1 = new int[] {
-                0, 1, 2, // První trojúhelník
-                0, 2, 3, // Druhý trojúhelník
-                0, 3, 1, // Třetí trojúhelník
-                1, 2, 3 // Čtvrtý trojúhelník
-        };
-
-        int[] indices2 = new int[] {
-            0, 1, 3, // První trojúhelník
-            2, 1, 3, // Druhý trojúhelník
-            2, 3, 1, // Třetí trojúhelník
-            1, 2, 3 // Čtvrtý trojúhelník
-    };
-
         // Vytvoření vertex buffer objektu (VBO)
-        _mesh1 = new Mesh(vertices1, indices1);// Vytvoří VBO
-        _mesh2 = new Mesh(vertices2, indices2);// Vytvoří VBO
+        _mesh1 = new Cube(1f);// Vytvoří VBO
+        _mesh2 = new Cube(500f);// Vytvoří VBO
     }
 
     // Hlavní smyčka
@@ -154,12 +122,12 @@ public class App {
 
             // Aktivace shaderového programu
             glUseProgram(_shaderProgram);
-            
+
             glEnable(GL_DEPTH_TEST); // Povolení hloubkového testu
-            
+
             // Nastavení kamery - předání matic do shaderu
-            camera.setCameraMatrix(70.0f, 0.1f, 100.0f, _shaderProgram, "camMatrix");
-            
+            camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgram, "camMatrix");
+
             // Vykreslení jehlanu
             _mesh1.draw();
             _mesh2.draw();

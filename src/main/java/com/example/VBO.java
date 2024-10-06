@@ -38,10 +38,9 @@ public class VBO {
         glEnableVertexAttribArray(1);
     }
 
-    // Smazání bufferu
+    // Uvolnění bufferu
     public void delete() {
         glDeleteBuffers(_id);
-        // Uvolnění paměti bufferu
     }
 
     public int getId() {

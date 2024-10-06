@@ -23,10 +23,9 @@ public class IBO {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _id); // Nastaví IBO
     }
 
-    // Smazání bufferu
+    // Uvolnění bufferu
     public void delete() {
         glDeleteBuffers(_id);
-        // Uvolnění paměti bufferu
     }
 
     public int getId() {

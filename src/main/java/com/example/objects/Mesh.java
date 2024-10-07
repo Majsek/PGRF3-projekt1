@@ -19,11 +19,12 @@ public abstract class Mesh {
         _ibo = new IBO(_indices);
     }
 
-    public void draw() {
+    public void draw(int drawMode) {
         _vbo.bindVBOAndSetupAttributes();
         _ibo.bindIBO();
-         glDrawElements(GL_TRIANGLES, _indices.length, GL_UNSIGNED_INT, 0);
-        //glDrawArrays(GL_TRIANGLE_STRIP, 0, _vertices.length);
+
+        
+        glDrawElements(drawMode, _indices.length, GL_UNSIGNED_INT, 0);
     }
 
     public void cleanup() {

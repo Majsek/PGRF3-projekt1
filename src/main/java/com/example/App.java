@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.*;
+import java.util.ArrayList;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -20,16 +21,25 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import com.example.objects.Cube;
 import com.example.objects.Mesh;
+import com.example.objects.TriangleGrid;
+import com.example.objects.TriangleStripGrid;
 
 public class App {
     private long _window;
     private int _shaderProgram;
-    private Mesh _mesh1;
-    private Mesh _mesh2;
-    private IBO _ibo;
 
     // Kamera
-    private Camera camera;
+    private Camera _camera;
+
+    // Objects
+    private ArrayList<Mesh> _objects = new ArrayList<>();
+    private ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
+
+    // Draw modes
+    private boolean _drawTriangles = true;
+    private boolean _drawLines = false;
+    private boolean _drawPoints = false;
+    private boolean _drawTriangleStrips = true;
 
     public void run() {
         init();
@@ -37,8 +47,12 @@ public class App {
         // Po zrušení loopu:
 
         // Uvolnění bufferů
-        _mesh1.cleanup();
-        _mesh2.cleanup();
+        for (Mesh mesh : _objects) {
+            mesh.cleanup();
+        }
+        for (Mesh mesh : _triangleStripObjects) {
+            mesh.cleanup();
+        }
 
         // Uvolnění okna a terminace GLFW
         glfwDestroyWindow(_window);
@@ -76,7 +90,7 @@ public class App {
         }
 
         // Inicializace kamery
-        camera = new Camera(
+        _camera = new Camera(
                 new Vector3f(0.0f, 0.0f, 3.0f), // pozice kamery
                 new Vector3f(0.0f, 0.0f, -1.0f), // směr kamery
                 new Vector3f(0.0f, 1.0f, 0.0f), // up vektor
@@ -97,9 +111,16 @@ public class App {
             e.printStackTrace();
         }
 
-        // Vytvoření vertex buffer objektu (VBO)
-        _mesh1 = new Cube(1f);// Vytvoří VBO
-        _mesh2 = new Cube(500f);// Vytvoří VBO
+        glPointSize(8.0f); // Nastaví velikost bodů
+
+        // _objects.add(new Cube(1f));
+
+        // _objects.add(new Cube(500f));
+        // _objects.add(new Cube(500f));
+
+        _objects.add(new TriangleGrid(5f, 10f, 10, 10));
+        //_triangleStripObjects.add(new TriangleStripGrid(5f, 10f, 10, 10));
+
     }
 
     // Hlavní smyčka
@@ -114,7 +135,7 @@ public class App {
             lastFrameTime = currentFrameTime;
 
             // Zpracování vstupů kamery
-            camera.processInputs(_window, deltaTime);
+            _camera.processInputs(_window, deltaTime);
 
             // Vykreslování
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // Nastavení barvy pozadí
@@ -126,11 +147,37 @@ public class App {
             glEnable(GL_DEPTH_TEST); // Povolení hloubkového testu
 
             // Nastavení kamery - předání matic do shaderu
-            camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgram, "camMatrix");
+            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgram, "camMatrix");
 
-            // Vykreslení jehlanu
-            _mesh1.draw();
-            _mesh2.draw();
+            // Vykreslení objektů
+            for (Mesh mesh : _objects) {
+
+                if (_drawTriangles) {
+                    mesh.draw(GL_TRIANGLES);
+                } // Pro plné trojúhelníky
+                if (_drawLines) {
+                    mesh.draw(GL_LINES);
+                } // Pro vykreslení hran
+                if (_drawPoints) {
+                    mesh.draw(GL_POINTS);
+                } // Pro vykreslení bodů
+            }
+
+            // Vykreslení objektů typu GL_TRIANGLE_STRIP
+            for (Mesh mesh : _triangleStripObjects) {
+                if (_drawTriangles) {
+                    mesh.draw(GL_TRIANGLES);
+                } // Pro plné trojúhelníky
+                if (_drawLines) {
+                    mesh.draw(GL_LINES);
+                } // Pro vykreslení hran
+                if (_drawPoints) {
+                    mesh.draw(GL_POINTS);
+                } // Pro vykreslení bodů
+                if (_drawTriangleStrips) {
+                    mesh.draw(GL_TRIANGLE_STRIP);
+                } // Pro vykreslení triangle strips
+            }
 
             // Přepínání bufferů
             glfwSwapBuffers(_window);
@@ -145,6 +192,19 @@ public class App {
                 glfwSetWindowShouldClose(window, true); // Zavře okno
             } else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
                 restart(); // Restart aplikace
+            }
+
+            if (key == GLFW_KEY_I && action == GLFW_PRESS) {
+                _drawTriangles = !_drawTriangles;
+            }
+            if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+                _drawLines = !_drawLines;
+            }
+            if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+                _drawPoints = !_drawPoints;
+            }
+            if (key == GLFW_KEY_U && action == GLFW_PRESS) {
+                _drawTriangleStrips = !_drawTriangleStrips;
             }
         });
     }

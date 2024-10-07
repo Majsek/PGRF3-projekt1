@@ -40,6 +40,7 @@ public class App {
     private boolean _drawLines = false;
     private boolean _drawPoints = false;
     private boolean _drawTriangleStrips = true;
+    private int _timeUniformLocation;
 
     public void run() {
         init();
@@ -113,13 +114,16 @@ public class App {
 
         glPointSize(8.0f); // Nastaví velikost bodů
 
+        // Získání ID uniform proměnné z shaderu
+        _timeUniformLocation = glGetUniformLocation(_shaderProgram, "time");
+
         // _objects.add(new Cube(1f));
 
         // _objects.add(new Cube(500f));
         // _objects.add(new Cube(500f));
 
-        _objects.add(new TriangleGrid(5f, 10f, 10, 10));
-        //_triangleStripObjects.add(new TriangleStripGrid(5f, 10f, 10, 10));
+         _objects.add(new TriangleGrid(5f, 10f, 400, 400));
+        _triangleStripObjects.add(new TriangleStripGrid(5f, 10f, 400, 400));
 
     }
 
@@ -133,6 +137,9 @@ public class App {
             float currentFrameTime = (float) glfwGetTime();
             float deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
+
+            // Pošle uniform 'time' do shaderu
+            glUniform1f(_timeUniformLocation, currentFrameTime);
 
             // Zpracování vstupů kamery
             _camera.processInputs(_window, deltaTime);

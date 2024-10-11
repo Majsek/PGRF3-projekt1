@@ -72,7 +72,7 @@ public class App {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Skrytí okna
 
         // Vytvoření okna
-        _window = glfwCreateWindow(800, 600, "PGRF3 - LWJGL projekt1 - Minařík Matěj - minarma1@uhk.cz", NULL, NULL);
+        _window = glfwCreateWindow(1400, 900, "PGRF3 - LWJGL projekt1 - Minařík Matěj - minarma1@uhk.cz", NULL, NULL);
         if (_window == NULL) {
             throw new IllegalStateException("Nelze vytvořit okno");
         }
@@ -95,7 +95,7 @@ public class App {
                 new Vector3f(0.0f, 0.0f, 3.0f), // pozice kamery
                 new Vector3f(0.0f, 0.0f, -1.0f), // směr kamery
                 new Vector3f(0.0f, 1.0f, 0.0f), // up vektor
-                800, 600 // rozměry okna
+                1400, 900 // rozměry okna
         );
 
         glfwMakeContextCurrent(_window); // Nastavení aktivního okna pro GLFW

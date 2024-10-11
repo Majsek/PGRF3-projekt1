@@ -26,7 +26,11 @@ import com.example.objects.TriangleStripGrid;
 
 public class App {
     private long _window;
-    private int _shaderProgram;
+
+    // Shader programs
+    private int _shaderProgramDefault;
+    private int _shaderProgramWaveAnimation;
+    private int _shaderProgramTorus;
 
     // Kamera
     private Camera _camera;
@@ -34,13 +38,17 @@ public class App {
     // Objects
     private ArrayList<Mesh> _objects = new ArrayList<>();
     private ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
+    private ArrayList<Mesh> _waveAnimationObjects = new ArrayList<>();
 
     // Draw modes
     private boolean _drawTriangles = true;
     private boolean _drawLines = false;
     private boolean _drawPoints = false;
     private boolean _drawTriangleStrips = true;
-    private int _timeUniformLocation;
+    private int _timeDefaultUniformLocation;
+    private int _timeTorusUniformLocation;
+    private int _timeWaveAnimationUniformLocation;
+    private int _xOffsetTorusUniformLocation;
 
     public void run() {
         init();
@@ -107,24 +115,34 @@ public class App {
         setupKeyCallback(); // Nastavení input callbacků
 
         try {
-            _shaderProgram = createShaderProgram();
+            _shaderProgramDefault = createShaderProgram("default");
+            _shaderProgramWaveAnimation = createShaderProgram("waveAnimation");
+            _shaderProgramTorus = createShaderProgram("torus");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        glPointSize(8.0f); // Nastaví velikost bodů
+        glPointSize(2.0f); // Nastaví velikost bodů
 
         // Získání ID uniform proměnné z shaderu
-        _timeUniformLocation = glGetUniformLocation(_shaderProgram, "time");
+        _timeDefaultUniformLocation = glGetUniformLocation(_shaderProgramDefault, "time");
+        _timeTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "time");
+        _timeWaveAnimationUniformLocation = glGetUniformLocation(_shaderProgramWaveAnimation, "time");
 
+        _xOffsetTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "xOffset");
+
+
+        // ============================== OBJEKTY ==============================
         // _objects.add(new Cube(1f));
 
         // _objects.add(new Cube(500f));
         // _objects.add(new Cube(500f));
 
-         _objects.add(new TriangleGrid(5f, 10f, 400, 400));
-        _triangleStripObjects.add(new TriangleStripGrid(5f, 10f, 400, 400));
+        _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40));
+        //_triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
 
+        //_objects.add(new Torus(5f, 10f, 40, 40));
+        _objects.add(new TriangleGrid(1, 2, 100, 100));
     }
 
     // Hlavní smyčka
@@ -137,28 +155,26 @@ public class App {
             float currentFrameTime = (float) glfwGetTime();
             float deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
-
-            // Pošle uniform 'time' do shaderu
-            glUniform1f(_timeUniformLocation, currentFrameTime);
-
-            // Zpracování vstupů kamery
-            _camera.processInputs(_window, deltaTime);
-
+            
             // Vykreslování
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // Nastavení barvy pozadí
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Vymazání obrazovky
-
-            // Aktivace shaderového programu
-            glUseProgram(_shaderProgram);
-
             glEnable(GL_DEPTH_TEST); // Povolení hloubkového testu
 
-            // Nastavení kamery - předání matic do shaderu
-            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgram, "camMatrix");
+            // Zpracování vstupů kamery
+            _camera.processInputs(_window, deltaTime);
+            
+            
+            // TORUS
+            glUseProgram(_shaderProgramTorus);
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timeTorusUniformLocation, currentFrameTime);
+            glUniform1f(_xOffsetTorusUniformLocation, 10f);
 
+            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgramTorus, "camMatrix");
+            // Nastavení kamery - předání matic do shaderu
             // Vykreslení objektů
             for (Mesh mesh : _objects) {
-
                 if (_drawTriangles) {
                     mesh.draw(GL_TRIANGLES);
                 } // Pro plné trojúhelníky
@@ -170,6 +186,7 @@ public class App {
                 } // Pro vykreslení bodů
             }
 
+            
             // Vykreslení objektů typu GL_TRIANGLE_STRIP
             for (Mesh mesh : _triangleStripObjects) {
                 if (_drawTriangles) {
@@ -184,6 +201,25 @@ public class App {
                 if (_drawTriangleStrips) {
                     mesh.draw(GL_TRIANGLE_STRIP);
                 } // Pro vykreslení triangle strips
+            }
+
+            // WAVE ANIMATION
+            glUseProgram(_shaderProgramWaveAnimation);
+            glUniform1f(_timeWaveAnimationUniformLocation, currentFrameTime);
+            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgramWaveAnimation, "camMatrix");
+            
+            // Vykreslení objektů které používají WaveAnimation shader
+            for (Mesh mesh : _waveAnimationObjects) {
+
+                if (_drawTriangles) {
+                    mesh.draw(GL_TRIANGLES);
+                } // Pro plné trojúhelníky
+                if (_drawLines) {
+                    mesh.draw(GL_LINES);
+                } // Pro vykreslení hran
+                if (_drawPoints) {
+                    mesh.draw(GL_POINTS);
+                } // Pro vykreslení bodů
             }
 
             // Přepínání bufferů
@@ -223,9 +259,9 @@ public class App {
     }
 
     // Vytvoří a vrátí shader program z shader souborů
-    private int createShaderProgram() throws IOException {
-        int vertexShader = loadShaderFromPath("shaders/vertex_shader.vert", GL_VERTEX_SHADER);
-        int fragmentShader = loadShaderFromPath("shaders/fragment_shader.frag", GL_FRAGMENT_SHADER);
+    private int createShaderProgram(String shaderName) throws IOException {
+        int vertexShader = loadShaderFromPath("shaders/" + shaderName + ".vert", GL_VERTEX_SHADER);
+        int fragmentShader = loadShaderFromPath("shaders/" + shaderName + ".frag", GL_FRAGMENT_SHADER);
 
         int shaderProgram = glCreateProgram();
         glAttachShader(shaderProgram, vertexShader);

@@ -14,7 +14,7 @@ public class TriangleStripGrid extends Mesh {
         // Vertexy
         for (int i = 0; i <= rows; i++) {
             for (int j = 0; j <= cols; j++) {
-                float x = -width / 2 + j * dx + 10f;
+                float x = -width / 2 + j * dx;
                 float y = -height / 2 + i * dy;
                 float z = 0.0f;
 

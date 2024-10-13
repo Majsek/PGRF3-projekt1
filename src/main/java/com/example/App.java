@@ -40,6 +40,8 @@ public class App {
     private ArrayList<Mesh> _objects = new ArrayList<>();
     private ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
     private ArrayList<Mesh> _waveAnimationObjects = new ArrayList<>();
+    private ArrayList<Mesh> _planeWaveObjects = new ArrayList<>();
+
     private Mesh _skybox;
 
     // Draw modes
@@ -52,6 +54,9 @@ public class App {
     private int _timeTorusUniformLocation;
     private int _timeWaveAnimationUniformLocation;
     private int _xOffsetTorusUniformLocation;
+    private int _shaderProgramPlaneWave;
+    private int _timePlaneWaveUniformLocation;
+    private int _xOffsetPlaneWaveUniformLocation;
 
     public void run() {
         init();
@@ -63,6 +68,10 @@ public class App {
             mesh.cleanup();
         }
         for (Mesh mesh : _triangleStripObjects) {
+            mesh.cleanup();
+        }
+
+        for (Mesh mesh : _planeWaveObjects) {
             mesh.cleanup();
         }
 
@@ -122,6 +131,8 @@ public class App {
             _shaderProgramSkybox = createShaderProgram("skybox");
             _shaderProgramWaveAnimation = createShaderProgram("waveAnimation");
             _shaderProgramTorus = createShaderProgram("torus");
+
+            _shaderProgramPlaneWave = createShaderProgram("planeWave");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -135,21 +146,23 @@ public class App {
         _timeTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "time");
         _timeWaveAnimationUniformLocation = glGetUniformLocation(_shaderProgramWaveAnimation, "time");
 
-        _xOffsetTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "xOffset");
+        _timePlaneWaveUniformLocation = glGetUniformLocation(_shaderProgramPlaneWave, "time");
 
+        _xOffsetTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "xOffset");
+        _xOffsetPlaneWaveUniformLocation = glGetUniformLocation(_shaderProgramPlaneWave, "xOffset");
 
         // ============================== OBJEKTY ==============================
-        // _objects.add(new Cube(1f));
 
         // _objects.add(new Cube(500f));
         // _objects.add(new Cube(500f));
 
         _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40));
-        //_triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
+        // _triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
 
-        //_objects.add(new Torus(5f, 10f, 40, 40));
         _objects.add(new TriangleGrid(1, 2, 100, 100));
         _skybox = new Cube(100f);
+
+        _planeWaveObjects.add(new TriangleGrid(1, 1, 100, 100));
     }
 
     // Hlavní smyčka
@@ -181,63 +194,63 @@ public class App {
             glUseProgram(_shaderProgramTorus);
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeTorusUniformLocation, currentFrameTime);
-            glUniform1f(_xOffsetTorusUniformLocation, 10f);
+            glUniform1f(_xOffsetTorusUniformLocation, 20f);
 
-            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgramTorus, "camMatrix");
+            // Nastavení kamery - předání matic do shaderu
+            _camera.setCameraMatrixIntoShader(_shaderProgramTorus);
+
+            // Vykreslení objektů
+            for (Mesh mesh : _objects) {
+                drawMesh(mesh);
+            }
+
+        // PlANE WAVE
+            glUseProgram(_shaderProgramPlaneWave);
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timePlaneWaveUniformLocation, currentFrameTime);
+            glUniform1f(_xOffsetPlaneWaveUniformLocation, 10f);
+
+            _camera.setCameraMatrixIntoShader(_shaderProgramPlaneWave);
             // Nastavení kamery - předání matic do shaderu
             // Vykreslení objektů
             for (Mesh mesh : _objects) {
-                if (_drawTriangles) {
-                    mesh.draw(GL_TRIANGLES);
-                } // Pro plné trojúhelníky
-                if (_drawLines) {
-                    mesh.draw(GL_LINES);
-                } // Pro vykreslení hran
-                if (_drawPoints) {
-                    mesh.draw(GL_POINTS);
-                } // Pro vykreslení bodů
+                drawMesh(mesh);
             }
 
-            
             // Vykreslení objektů typu GL_TRIANGLE_STRIP
             for (Mesh mesh : _triangleStripObjects) {
-                if (_drawTriangles) {
-                    mesh.draw(GL_TRIANGLES);
-                } // Pro plné trojúhelníky
-                if (_drawLines) {
-                    mesh.draw(GL_LINES);
-                } // Pro vykreslení hran
-                if (_drawPoints) {
-                    mesh.draw(GL_POINTS);
-                } // Pro vykreslení bodů
+                drawMesh(mesh);
                 if (_drawTriangleStrips) {
                     mesh.draw(GL_TRIANGLE_STRIP);
                 } // Pro vykreslení triangle strips
             }
 
-            // WAVE ANIMATION
+        // WAVE ANIMATION
             glUseProgram(_shaderProgramWaveAnimation);
             glUniform1f(_timeWaveAnimationUniformLocation, currentFrameTime);
-            _camera.setCameraMatrix(70.0f, 0.1f, 1000.0f, _shaderProgramWaveAnimation, "camMatrix");
-            
+            _camera.setCameraMatrixIntoShader(_shaderProgramWaveAnimation);
+
             // Vykreslení objektů které používají WaveAnimation shader
             for (Mesh mesh : _waveAnimationObjects) {
-
-                if (_drawTriangles) {
-                    mesh.draw(GL_TRIANGLES);
-                } // Pro plné trojúhelníky
-                if (_drawLines) {
-                    mesh.draw(GL_LINES);
-                } // Pro vykreslení hran
-                if (_drawPoints) {
-                    mesh.draw(GL_POINTS);
-                } // Pro vykreslení bodů
+                drawMesh(mesh);
             }
 
             // Přepínání bufferů
             glfwSwapBuffers(_window);
             glfwPollEvents();
         }
+    }
+
+    private void drawMesh(Mesh mesh) {
+        if (_drawTriangles) {
+            mesh.draw(GL_TRIANGLES);
+        } // Pro plné trojúhelníky
+        if (_drawLines) {
+            mesh.draw(GL_LINES);
+        } // Pro vykreslení hran
+        if (_drawPoints) {
+            mesh.draw(GL_POINTS);
+        } // Pro vykreslení bodů
     }
 
     // Nastaví key callbacky

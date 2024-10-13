@@ -27,9 +27,13 @@ public class Camera {
         _height = height;
     }
 
-    public void setCameraMatrix(float FOVdeg, float nearPlane, float farPlane, int shader, String uniform) {
+    public void setCameraMatrixIntoShader(int shader) {
         Matrix4f view = new Matrix4f();
         Matrix4f projection = new Matrix4f();
+
+        float FOVdeg = 70f;
+        float farPlane = 200.0f;
+        float nearPlane = 0.1f;
 
         // Nastaví kameru, aby se dívala správným směrem
         view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
@@ -38,8 +42,29 @@ public class Camera {
         projection.perspective((float) Math.toRadians(FOVdeg), (float) _width / _height, nearPlane, farPlane);
 
         // Odeslání matice do shaderu
-        int uniformLocation = GL20.glGetUniformLocation(shader, uniform);
+        int uniformLocation = GL20.glGetUniformLocation(shader, "camMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, projection.mul(view).get(new float[16]));
+    }
+
+    public void setCameraViewAndProjectionIntoShader(int shader) {
+        Matrix4f view = new Matrix4f();
+        Matrix4f projection = new Matrix4f();
+
+        float FOVdeg = 70f;
+        float farPlane = 200.0f;
+        float nearPlane = 0.1f;
+
+        // Nastaví kameru, aby se dívala správným směrem
+        view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
+
+        // Nastavení perspektivy
+        projection.perspective((float) Math.toRadians(FOVdeg), (float) _width / _height, nearPlane, farPlane);
+
+        // Odeslání matice do shaderu
+        int uniformLocationView = GL20.glGetUniformLocation(shader, "view");
+        int uniformLocationProjection = GL20.glGetUniformLocation(shader, "projection");
+        GL20.glUniformMatrix4fv(uniformLocationView, false, view.get(new float[16]));
+        GL20.glUniformMatrix4fv(uniformLocationProjection, false, projection.get(new float[16]));
     }
 
     public void processInputs(long window, float deltaTime) {
@@ -75,7 +100,7 @@ public class Camera {
 
         // Zrychlení pohybu (levý Shift)
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            _speed = 2.0f;
+            _speed = 15.0f;
         } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
             _speed = 1.0f;
         }

@@ -29,6 +29,7 @@ public class App {
 
     // Shader programs
     private int _shaderProgramDefault;
+    private int _shaderProgramSkybox;
     private int _shaderProgramWaveAnimation;
     private int _shaderProgramTorus;
 
@@ -39,6 +40,7 @@ public class App {
     private ArrayList<Mesh> _objects = new ArrayList<>();
     private ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
     private ArrayList<Mesh> _waveAnimationObjects = new ArrayList<>();
+    private Mesh _skybox;
 
     // Draw modes
     private boolean _drawTriangles = true;
@@ -46,6 +48,7 @@ public class App {
     private boolean _drawPoints = false;
     private boolean _drawTriangleStrips = true;
     private int _timeDefaultUniformLocation;
+    private int _timeSkyboxUniformLocation;
     private int _timeTorusUniformLocation;
     private int _timeWaveAnimationUniformLocation;
     private int _xOffsetTorusUniformLocation;
@@ -116,6 +119,7 @@ public class App {
 
         try {
             _shaderProgramDefault = createShaderProgram("default");
+            _shaderProgramSkybox = createShaderProgram("skybox");
             _shaderProgramWaveAnimation = createShaderProgram("waveAnimation");
             _shaderProgramTorus = createShaderProgram("torus");
         } catch (IOException e) {
@@ -126,6 +130,8 @@ public class App {
 
         // Získání ID uniform proměnné z shaderu
         _timeDefaultUniformLocation = glGetUniformLocation(_shaderProgramDefault, "time");
+        _timeSkyboxUniformLocation = glGetUniformLocation(_shaderProgramSkybox, "time");
+
         _timeTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "time");
         _timeWaveAnimationUniformLocation = glGetUniformLocation(_shaderProgramWaveAnimation, "time");
 
@@ -143,6 +149,7 @@ public class App {
 
         //_objects.add(new Torus(5f, 10f, 40, 40));
         _objects.add(new TriangleGrid(1, 2, 100, 100));
+        _skybox = new Cube(100f);
     }
 
     // Hlavní smyčka
@@ -155,7 +162,7 @@ public class App {
             float currentFrameTime = (float) glfwGetTime();
             float deltaTime = currentFrameTime - lastFrameTime;
             lastFrameTime = currentFrameTime;
-            
+
             // Vykreslování
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // Nastavení barvy pozadí
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Vymazání obrazovky
@@ -163,9 +170,14 @@ public class App {
 
             // Zpracování vstupů kamery
             _camera.processInputs(_window, deltaTime);
-            
-            
-            // TORUS
+
+        // SKYBOX
+            glUseProgram(_shaderProgramSkybox);
+            glUniform1f(_timeSkyboxUniformLocation, currentFrameTime);
+            _camera.setCameraViewAndProjectionIntoShader(_shaderProgramSkybox);
+            _skybox.draw(GL_TRIANGLES);
+
+        // TORUS
             glUseProgram(_shaderProgramTorus);
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeTorusUniformLocation, currentFrameTime);

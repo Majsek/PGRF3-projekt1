@@ -44,11 +44,6 @@ public class Camera {
         // Nastaví kameru, aby se dívala správným směrem
         view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
 
-        // Nastavení perspektivy
-        //projection.perspective((float) Math.toRadians(70), (float) _width / _height, 0.1f, 200f);
-        System.out.println("Projection" + projection);
-
-
         // Odeslání matice do shaderu
         int uniformLocation = GL20.glGetUniformLocation(shader, "camMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, projection.mul(view).get(new float[16]));

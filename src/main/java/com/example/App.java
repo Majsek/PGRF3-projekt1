@@ -27,11 +27,21 @@ import com.example.objects.TriangleStripGrid;
 public class App {
     private long _window;
 
-    // Shader programs
+    // SHADER PROGRAMS
     private int _shaderProgramDefault;
     private int _shaderProgramSkybox;
+
+    // Kartézské
     private int _shaderProgramWaveAnimation;
+    private int _shaderProgramPlaneWave;
+
+    // Sférické
     private int _shaderProgramTorus;
+    private int _shaderProgramSphericalRandom;
+
+    // Cylindrické
+    private int _shaderProgramCylindrical1;
+    private int _shaderProgramCylindrical2;
 
     // Kamera
     private Camera _camera;
@@ -44,19 +54,49 @@ public class App {
 
     private Mesh _skybox;
 
+    // Kartézské
+    private Mesh _waveAnimation;
+    private Mesh _planeWave;
+
+    // Sférické
+    private Mesh _torus;
+    private Mesh _sphericalRandom;
+
+    // Cylindrické
+    private Mesh _cylindrical1;
+    private Mesh _cylindrical2;
+
     // Draw modes
     private boolean _drawTriangles = true;
     private boolean _drawLines = false;
     private boolean _drawPoints = false;
     private boolean _drawTriangleStrips = true;
+
+    // UNIFORMS
+    // default
     private int _timeDefaultUniformLocation;
+    // skybox
     private int _timeSkyboxUniformLocation;
-    private int _timeTorusUniformLocation;
+
+    // Kartézské
     private int _timeWaveAnimationUniformLocation;
-    private int _xOffsetTorusUniformLocation;
-    private int _shaderProgramPlaneWave;
+
     private int _timePlaneWaveUniformLocation;
     private int _xOffsetPlaneWaveUniformLocation;
+
+    // Sférické
+    private int _timeTorusUniformLocation;
+    private int _xOffsetTorusUniformLocation;
+
+    private int _timeSphericalRandomUniformLocation;
+    private int _xOffsetSphericalRandomUniformLocation;
+
+    // Cylindrické
+    private int _timeCylindrical1UniformLocation;
+    private int _xOffsetCylindrical1UniformLocation;
+
+    private int _timeCylindrical2UniformLocation;
+    private int _xOffsetCylindrical2UniformLocation;
 
     public void run() {
         init();
@@ -129,10 +169,19 @@ public class App {
         try {
             _shaderProgramDefault = createShaderProgram("default");
             _shaderProgramSkybox = createShaderProgram("skybox");
-            _shaderProgramWaveAnimation = createShaderProgram("waveAnimation");
-            _shaderProgramTorus = createShaderProgram("torus");
 
+            // Kartézské
+            _shaderProgramWaveAnimation = createShaderProgram("waveAnimation");
             _shaderProgramPlaneWave = createShaderProgram("planeWave");
+
+            // Sférické
+            _shaderProgramTorus = createShaderProgram("torus");
+            _shaderProgramSphericalRandom = createShaderProgram("sphericalRandom");
+
+            // Cylindrické
+            _shaderProgramCylindrical1 = createShaderProgram("cylindrical1");
+            _shaderProgramCylindrical2 = createShaderProgram("cylindrical2");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -143,26 +192,53 @@ public class App {
         _timeDefaultUniformLocation = glGetUniformLocation(_shaderProgramDefault, "time");
         _timeSkyboxUniformLocation = glGetUniformLocation(_shaderProgramSkybox, "time");
 
-        _timeTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "time");
+        // Kartézské
         _timeWaveAnimationUniformLocation = glGetUniformLocation(_shaderProgramWaveAnimation, "time");
 
         _timePlaneWaveUniformLocation = glGetUniformLocation(_shaderProgramPlaneWave, "time");
-
-        _xOffsetTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "xOffset");
         _xOffsetPlaneWaveUniformLocation = glGetUniformLocation(_shaderProgramPlaneWave, "xOffset");
+
+        // Sférické
+        _timeTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "time");
+        _xOffsetTorusUniformLocation = glGetUniformLocation(_shaderProgramTorus, "xOffset");
+
+        _timeSphericalRandomUniformLocation = glGetUniformLocation(_shaderProgramSphericalRandom, "time");
+        _xOffsetSphericalRandomUniformLocation = glGetUniformLocation(_shaderProgramSphericalRandom, "xOffset");
+
+        // Cylindrické
+        _timeCylindrical1UniformLocation = glGetUniformLocation(_shaderProgramCylindrical1, "time");
+        _xOffsetCylindrical1UniformLocation = glGetUniformLocation(_shaderProgramCylindrical1, "xOffset");
+
+        _timeCylindrical2UniformLocation = glGetUniformLocation(_shaderProgramCylindrical2, "time");
+        _xOffsetCylindrical2UniformLocation = glGetUniformLocation(_shaderProgramCylindrical2, "xOffset");
 
         // ============================== OBJEKTY ==============================
 
-        // _objects.add(new Cube(500f));
-        // _objects.add(new Cube(500f));
-
-        _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40));
-        // _triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
-
-        _objects.add(new TriangleGrid(1, 2, 100, 100));
         _skybox = new Cube(100f);
 
+        // --------- KARTÉZSKÉ ---------
+        // Wave animation
+        _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40));
+
+        // Plane wave
         _planeWaveObjects.add(new TriangleGrid(1, 1, 100, 100));
+
+        // Triangle strip grid
+        // _triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
+
+        // --------- SFÉRICKÉ ---------
+        // Torus
+        _objects.add(new TriangleGrid(1, 2, 100, 100));
+
+        // Spherical random
+        _sphericalRandom = new TriangleGrid(1, 2, 300, 300);
+
+        // --------- CYLINDRICKÉ ---------
+        // Spherical random
+        _cylindrical1 = new TriangleGrid(1, 2, 100, 100);
+
+        // Spherical random
+        _cylindrical2 = new TriangleGrid(1, 2, 10, 100);
     }
 
     // Hlavní smyčka
@@ -184,13 +260,15 @@ public class App {
             // Zpracování vstupů kamery
             _camera.processInputs(_window, deltaTime);
 
-        // SKYBOX
+            // ----------------------------- SKYBOX -----------------------------
             glUseProgram(_shaderProgramSkybox);
             glUniform1f(_timeSkyboxUniformLocation, currentFrameTime);
+            // Nastavení kamery - předání matic do shaderu
             _camera.setCameraViewAndProjectionIntoShader(_shaderProgramSkybox);
+            // Vykreslení objektu
             _skybox.draw(GL_TRIANGLES);
 
-        // TORUS
+            // ----------------------------- TORUS -----------------------------
             glUseProgram(_shaderProgramTorus);
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeTorusUniformLocation, currentFrameTime);
@@ -204,7 +282,43 @@ public class App {
                 drawMesh(mesh);
             }
 
-        // PlANE WAVE
+            // ----------------------------- SPHERICAL RANDOM -----------------------------
+            glUseProgram(_shaderProgramSphericalRandom);
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timeSphericalRandomUniformLocation, currentFrameTime);
+            glUniform1f(_xOffsetSphericalRandomUniformLocation, 30f);
+
+            // Nastavení kamery - předání matic do shaderu
+            _camera.setCameraMatrixIntoShader(_shaderProgramSphericalRandom);
+
+            // Vykreslení objektu
+            drawMesh(_sphericalRandom);
+
+            // ----------------------------- CYLINDRICAL1 -----------------------------
+            glUseProgram(_shaderProgramCylindrical1);
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timeCylindrical1UniformLocation, currentFrameTime);
+            glUniform1f(_xOffsetCylindrical1UniformLocation, 40f);
+
+            // Nastavení kamery - předání matic do shaderu
+            _camera.setCameraMatrixIntoShader(_shaderProgramCylindrical1);
+
+            // Vykreslení objektu
+            drawMesh(_cylindrical1);
+
+            // ----------------------------- CYLINDRICAL2 -----------------------------
+            glUseProgram(_shaderProgramCylindrical2);
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timeCylindrical2UniformLocation, currentFrameTime);
+            glUniform1f(_xOffsetCylindrical2UniformLocation, 50f);
+
+            // Nastavení kamery - předání matic do shaderu
+            _camera.setCameraMatrixIntoShader(_shaderProgramCylindrical2);
+
+            // Vykreslení objektu
+            drawMesh(_cylindrical2);
+
+            // ----------------------------- PlANE WAVE -----------------------------
             glUseProgram(_shaderProgramPlaneWave);
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timePlaneWaveUniformLocation, currentFrameTime);
@@ -225,7 +339,7 @@ public class App {
                 } // Pro vykreslení triangle strips
             }
 
-        // WAVE ANIMATION
+            // WAVE ANIMATION
             glUseProgram(_shaderProgramWaveAnimation);
             glUniform1f(_timeWaveAnimationUniformLocation, currentFrameTime);
             _camera.setCameraMatrixIntoShader(_shaderProgramWaveAnimation);

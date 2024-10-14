@@ -18,6 +18,11 @@ public class Camera {
     private boolean _clickedIn = false;
     private boolean _justClicked = false;
     private int _width, _height;
+    Matrix4f _perspectiveProjection;
+    Matrix4f _orthogonalProjection;
+    Matrix4f _projection;
+    boolean _isPerspectiveProjection;
+    private boolean _cKeyPressedLastFrame;
 
     public Camera(Vector3f position, Vector3f orientation, Vector3f up, int width, int height) {
         _position = position;
@@ -25,21 +30,24 @@ public class Camera {
         _up = up;
         _width = width;
         _height = height;
+        calculatePerspectiveProjection();
+        calculateOrthogonalProjection();
+        
+        _projection = _perspectiveProjection;
+        _isPerspectiveProjection = true;
     }
 
     public void setCameraMatrixIntoShader(int shader) {
         Matrix4f view = new Matrix4f();
-        Matrix4f projection = new Matrix4f();
-
-        float FOVdeg = 70f;
-        float farPlane = 200.0f;
-        float nearPlane = 0.1f;
+        Matrix4f projection = new Matrix4f(_projection);
 
         // Nastaví kameru, aby se dívala správným směrem
         view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
 
         // Nastavení perspektivy
-        projection.perspective((float) Math.toRadians(FOVdeg), (float) _width / _height, nearPlane, farPlane);
+        //projection.perspective((float) Math.toRadians(70), (float) _width / _height, 0.1f, 200f);
+        System.out.println("Projection" + projection);
+
 
         // Odeslání matice do shaderu
         int uniformLocation = GL20.glGetUniformLocation(shader, "camMatrix");
@@ -105,6 +113,14 @@ public class Camera {
             _speed = 1.0f;
         }
 
+        // Přepnutí orthogonální projekce
+        if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && !_cKeyPressedLastFrame) {
+            _projection = _isPerspectiveProjection ? _orthogonalProjection : _perspectiveProjection;
+            _isPerspectiveProjection = !_isPerspectiveProjection;
+        }
+        _cKeyPressedLastFrame = glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS;
+        
+
         // Ovládání myši
         handleMouseInput(window);
     }
@@ -158,5 +174,23 @@ public class Camera {
 
     private void movePosition(Vector3f offset) {
         _position.add(offset);
+    }
+
+    private void calculatePerspectiveProjection() {
+        float FOVdeg = 70f;
+        float farPlane = 200.0f;
+        float nearPlane = 0.1f;
+        _perspectiveProjection = new Matrix4f().perspective((float) Math.toRadians(FOVdeg), (float) _width / _height,
+                nearPlane, farPlane);
+    }
+
+    private void calculateOrthogonalProjection() {
+        float left = -_width / 2.0f;
+        float right = _width / 2.0f;
+        float bottom = -_height / 2.0f;
+        float top = _height / 2.0f;
+        float farPlane = 500.0f;
+        float nearPlane = -100f;
+        _orthogonalProjection = new Matrix4f().ortho(left, right, bottom, top, nearPlane, farPlane);
     }
 }

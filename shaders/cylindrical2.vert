@@ -4,6 +4,7 @@ layout(location = 0) in vec3 position; // Pozice vrcholu
 layout(location = 1) in vec3 color;    // Barva vrcholu
 
 out vec3 fragColor; // Barva, která se pošle do fragment shaderu
+out vec3 fragPosition;
 uniform mat4 camMatrix;
 uniform float xOffset = 0;
 uniform float time;
@@ -27,4 +28,5 @@ void main() {
 
     gl_Position = camMatrix * vec4(finalPosition, 1.0); // Nastavení pozice
     fragColor = vec3(0.5 + sin(time + u), 0.3 + waveHeight, 0.8 + cos(u));
+    fragPosition = finalPosition;
 }

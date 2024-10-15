@@ -4,6 +4,7 @@ layout(location = 0) in vec3 position; // Pozice vrcholu
 layout(location = 1) in vec3 color;    // Barva vrcholu
 
 out vec3 fragColor; // Barva, která se pošle do fragment shaderu
+out vec3 fragPosition;
 uniform mat4 camMatrix;
 uniform float xOffset = 0;
 
@@ -32,4 +33,5 @@ void main() {
     fragColor = vec3(0.29 + wave, 0.1 + wave * torusPosition.z, 0.6 + wave);
     //fragColor = vec3(color.x, color.y, color.z);
     //fragColor = vec3(0.1,0.6,1.0);
+    fragPosition = torusPosition;
 }

@@ -215,7 +215,7 @@ public class Camera {
 
     private void calculatePerspectiveProjection() {
         float FOVdeg = 70f;
-        float farPlane = 200.0f;
+        float farPlane = 1000.0f;
         float nearPlane = 0.1f;
         _perspectiveProjection = new Matrix4f().perspective((float) Math.toRadians(FOVdeg), (float) _width / _height,
                 nearPlane, farPlane);

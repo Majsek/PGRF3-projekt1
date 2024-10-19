@@ -19,7 +19,7 @@ vec3 calculatePos(float u, float v) {
 
     // Vlnění
     float wave = sin(position.x * 5.0 + time) * 0.3; // 10.0 je frekvence vlny, 0.1 je amplituda
-    vec3 transformedPosition = vec3(x,y,z) + vec3(0.0, wave, wave);
+    vec3 transformedPosition = vec3(x,y+ wave,z+wave);
 
     vec4 point = vec4(transformedPosition.x, transformedPosition.y, transformedPosition.z, 1.0);
     vec4 transformedPoint = modelMatrix * point;
@@ -32,7 +32,7 @@ void main() {
     float v = position.y;
 
     vec3 finalPosition = calculatePos(u, v);
-    float smallvalue = 0.01; // Malý posun pro výpočet derivací
+    float smallvalue = 0.001; // Malý posun pro výpočet derivací
     vec3 neighbour1 = calculatePos(u + smallvalue, v);
     vec3 neighbour2 = calculatePos(u, v + smallvalue);
 
@@ -44,5 +44,5 @@ void main() {
 
     fragColor = vec3(color.x, color.y, color.z);
     fragPosition = finalPosition;
-    fragNormal = displacedNormal;
+    fragNormal = normalize(displacedNormal);
 }

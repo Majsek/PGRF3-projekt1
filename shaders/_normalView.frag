@@ -22,7 +22,7 @@ void main() {
 
     // Výpočet směru ke světlu
     //vec3 lightDir = normalize(lightPos - fragPosition);
-    vec3 lightDir = normalize(lightPos - fragPosition);
+    vec3 lightDir = normalize(normalize(lightPos) - fragPosition);
 
     // Lambertův zákon - difúzní osvětlení
     float diff = max(dot(normal, lightDir), 0.0);

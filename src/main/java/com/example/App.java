@@ -9,14 +9,18 @@ import java.util.List;
 
 import org.joml.Vector3f;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_E;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_I;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_O;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_P;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_Q;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_R;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_U;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_UP;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
@@ -93,7 +97,7 @@ public class App {
 
     // Sférické
     private final ArrayList<Integer> _shaderProgramsTorus = new ArrayList<>();
-    private final ArrayList<Integer> _shaderProgramsSphericalRandom = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsSphericalRandom;
 
     // Cylindrické
     private final ArrayList<Integer> _shaderProgramsCylindrical1 = new ArrayList<>();
@@ -103,10 +107,10 @@ public class App {
     private Camera _camera;
 
     // Objects
-    private ArrayList<Mesh> _objects = new ArrayList<>();
-    private ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
-    private ArrayList<Mesh> _waveAnimationObjects = new ArrayList<>();
-    private ArrayList<Mesh> _planeWaveObjects = new ArrayList<>();
+    private final ArrayList<Mesh> _objects = new ArrayList<>();
+    private final ArrayList<Mesh> _triangleStripObjects = new ArrayList<>();
+    private final ArrayList<Mesh> _waveAnimationObjects = new ArrayList<>();
+    private final ArrayList<Mesh> _planeWaveObjects = new ArrayList<>();
 
     private Mesh _skybox;
     private Mesh _light;
@@ -160,6 +164,10 @@ public class App {
 
     private int _shaderMode = 0;
     private int _shaderModeMax;
+
+    public App() {
+        this._shaderProgramsSphericalRandom = new ArrayList<>();
+    }
 
     public void run() {
         init();
@@ -538,6 +546,18 @@ public class App {
             }
             if (key == GLFW_KEY_E && action == GLFW_PRESS) {
                 changeShaderMode(+1);
+            }
+            if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+                _light.translate(-1, 0, 0);
+            }
+            if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+                _light.translate(1, 0, 0);
+            }
+            if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+                _light.translate(0, 0, -1);
+            }
+            if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+                _light.translate(0, 0, 1);
             }
         });
     }

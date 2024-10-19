@@ -1,21 +1,23 @@
 package com.example.objects;
 
+import java.util.List;
+
 public class Cube extends Mesh {
-    public Cube(float size) {
-        super(createVertices(size), createIndices());
+    public Cube(float size, List<Integer> shaderProgramIDs) {
+        super(createVertices(size), createIndices(), shaderProgramIDs);
     }
 
     private static float[] createVertices(float size) {
         return new float[] {
                 // Pozice // Barvy (RGB)
-                -size, -size, -size, 1.0f, 0.0f, 0.0f, // 0
-                size, -size, -size, 0.0f, 1.0f, 0.0f, // 1
-                size, size, -size, 0.0f, 0.0f, 1.0f, // 2
-                -size, size, -size, 1.0f, 1.0f, 0.0f, // 3
-                -size, -size, size, 0.0f, 1.0f, 1.0f, // 4
-                size, -size, size, 1.0f, 0.0f, 1.0f, // 5
+                -size, -size, -size, 1.0f, 1.0f, 1.0f, // 0
+                size, -size, -size, 1.0f, 1.0f, 1.0f, // 1
+                size, size, -size, 1.0f, 1.0f, 1.0f, // 2
+                -size, size, -size, 1.0f, 1.0f, 1.0f, // 3
+                -size, -size, size, 1.0f, 1.0f, 1.0f, // 4
+                size, -size, size, 1.0f, 1.0f, 1.0f, // 5
                 size, size, size, 1.0f, 1.0f, 1.0f, // 6
-                -size, size, size, 0.0f, 0.0f, 0.0f // 7
+                -size, size, size, 1.0f, 1.0f, 1.0f // 7
         };
     }
 

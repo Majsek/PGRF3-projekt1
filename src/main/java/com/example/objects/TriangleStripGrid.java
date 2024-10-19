@@ -1,8 +1,10 @@
 package com.example.objects;
 
+import java.util.List;
+
 public class TriangleStripGrid extends Mesh {
-    public TriangleStripGrid(float width, float height, int rows, int cols) {
-        super(createVertices(width, height, rows, cols), createIndices(rows, cols));
+    public TriangleStripGrid(float width, float height, int rows, int cols, List<Integer> shaderProgramIDs) {
+        super(createVertices(width, height, rows, cols), createIndices(rows, cols), shaderProgramIDs);
     }
 
     private static float[] createVertices(float width, float height, int rows, int cols) {

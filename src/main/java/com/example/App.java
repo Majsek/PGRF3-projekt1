@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.joml.Vector3f;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
@@ -68,6 +69,7 @@ import static org.lwjgl.opengl.GL20.glGetUniformLocation;
 import static org.lwjgl.opengl.GL20.glLinkProgram;
 import static org.lwjgl.opengl.GL20.glShaderSource;
 import static org.lwjgl.opengl.GL20.glUniform1f;
+import static org.lwjgl.opengl.GL20.glUniform3f;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 import org.lwjgl.system.MemoryStack;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -83,18 +85,19 @@ public class App {
     // SHADER PROGRAMS
     private int _shaderProgramDefault;
     private int _shaderProgramSkybox;
+    private final ArrayList<Integer> _shaderProgramsFloor = new ArrayList<>();
 
     // Kartézské
-    private ArrayList<Integer> _shaderProgramsWaveAnimation = new ArrayList<>();
-    private ArrayList<Integer> _shaderProgramsPlaneWave = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsWaveAnimation = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsPlaneWave = new ArrayList<>();
 
     // Sférické
-    private ArrayList<Integer> _shaderProgramsTorus = new ArrayList<>();
-    private ArrayList<Integer> _shaderProgramsSphericalRandom = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsTorus = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsSphericalRandom = new ArrayList<>();
 
     // Cylindrické
-    private ArrayList<Integer> _shaderProgramsCylindrical1 = new ArrayList<>();
-    private ArrayList<Integer> _shaderProgramsCylindrical2 = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsCylindrical1 = new ArrayList<>();
+    private final ArrayList<Integer> _shaderProgramsCylindrical2 = new ArrayList<>();
 
     // Kamera
     private Camera _camera;
@@ -106,6 +109,8 @@ public class App {
     private ArrayList<Mesh> _planeWaveObjects = new ArrayList<>();
 
     private Mesh _skybox;
+    private Mesh _light;
+    private Mesh _floor;
 
     // Kartézské
     private Mesh _waveAnimation;
@@ -130,26 +135,28 @@ public class App {
     private int _timeDefaultUniformLocation;
     // skybox
     private int _timeSkyboxUniformLocation;
+    private ArrayList<Integer> _lightPosFloorUniformLocations = new ArrayList<>();
 
     // Kartézské
     private ArrayList<Integer> _timeWaveAnimationUniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosWaveAnimationUniformLocations = new ArrayList<>();
 
     private ArrayList<Integer> _timePlaneWaveUniformLocations = new ArrayList<>();
-    private ArrayList<Integer> _xOffsetPlaneWaveUniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosPlaneWaveUniformLocations = new ArrayList<>();
 
     // Sférické
     private ArrayList<Integer> _timeTorusUniformLocations = new ArrayList<>();
-    private ArrayList<Integer> _xOffsetTorusUniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosTorusUniformLocations = new ArrayList<>();
 
     private ArrayList<Integer> _timeSphericalRandomUniformLocations = new ArrayList<>();
-    private ArrayList<Integer> _xOffsetSphericalRandomUniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosSphericalRandomUniformLocations = new ArrayList<>();
 
     // Cylindrické
     private ArrayList<Integer> _timeCylindrical1UniformLocations = new ArrayList<>();
-    private ArrayList<Integer> _xOffsetCylindrical1UniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosCylindrical1UniformLocations = new ArrayList<>();
 
     private ArrayList<Integer> _timeCylindrical2UniformLocations = new ArrayList<>();
-    private ArrayList<Integer> _xOffsetCylindrical2UniformLocations = new ArrayList<>();
+    private ArrayList<Integer> _lightPosCylindrical2UniformLocations = new ArrayList<>();
 
     private int _shaderMode = 0;
     private int _shaderModeMax;
@@ -226,6 +233,9 @@ public class App {
             _shaderProgramDefault = createShaderProgram("default");
             _shaderProgramSkybox = createShaderProgram("skybox");
 
+            // ============================================== DEFAULT
+            // ==============================================
+            _shaderProgramsFloor.add(createShaderProgram("floor"));
             // Kartézské
             _shaderProgramsWaveAnimation.add(createShaderProgram("waveAnimation"));
             _shaderProgramsPlaneWave.add(createShaderProgram("planeWave"));
@@ -238,6 +248,40 @@ public class App {
             _shaderProgramsCylindrical1.add(createShaderProgram("cylindrical1"));
             _shaderProgramsCylindrical2.add(createShaderProgram("cylindrical2"));
 
+            // ============================================== _xyzColor
+            // ==============================================
+            // Floor
+            _shaderProgramsFloor.add(createShaderProgram("floor", "_xyzColor"));
+
+            // Kartézské
+            _shaderProgramsWaveAnimation.add(createShaderProgram("waveAnimation", "_xyzColor"));
+            _shaderProgramsPlaneWave.add(createShaderProgram("planeWave", "_xyzColor"));
+
+            // Sférické
+            _shaderProgramsTorus.add(createShaderProgram("torus", "_xyzColor"));
+            _shaderProgramsSphericalRandom.add(createShaderProgram("sphericalRandom", "_xyzColor"));
+
+            // Cylindrické
+            _shaderProgramsCylindrical1.add(createShaderProgram("cylindrical1", "_xyzColor"));
+            _shaderProgramsCylindrical2.add(createShaderProgram("cylindrical2", "_xyzColor"));
+
+            // ============================================== _normalView
+            // ==============================================
+            // Floor
+            _shaderProgramsFloor.add(createShaderProgram("floor", "_normalView"));
+
+            // Kartézské
+            _shaderProgramsWaveAnimation.add(createShaderProgram("waveAnimation", "_normalView"));
+            _shaderProgramsPlaneWave.add(createShaderProgram("planeWave", "_normalView"));
+
+            // Sférické
+            _shaderProgramsTorus.add(createShaderProgram("torus", "_normalView"));
+            _shaderProgramsSphericalRandom.add(createShaderProgram("sphericalRandom", "_normalView"));
+
+            // Cylindrické
+            _shaderProgramsCylindrical1.add(createShaderProgram("cylindrical1", "_normalView"));
+            _shaderProgramsCylindrical2.add(createShaderProgram("cylindrical2", "_normalView"));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -245,60 +289,80 @@ public class App {
         glPointSize(2.0f); // Nastaví velikost bodů
 
         // Získání ID uniform proměnné z shaderu
-        _timeDefaultUniformLocation = glGetUniformLocation(_shaderProgramDefault, "time"); 
+        _timeDefaultUniformLocation = glGetUniformLocation(_shaderProgramDefault, "time");
         _timeSkyboxUniformLocation = glGetUniformLocation(_shaderProgramSkybox, "time");
 
         _shaderModeMax = _shaderProgramsWaveAnimation.size() - 1;
         for (int i = 0; i < _shaderProgramsWaveAnimation.size(); i++) {
+            _lightPosFloorUniformLocations.add(glGetUniformLocation(_shaderProgramsPlaneWave.get(i), "lightPos"));
             // Kartézské
             _timeWaveAnimationUniformLocations.add(glGetUniformLocation(_shaderProgramsWaveAnimation.get(i), "time"));
+            _lightPosWaveAnimationUniformLocations
+                    .add(glGetUniformLocation(_shaderProgramsWaveAnimation.get(i), "lightPos"));
 
             _timePlaneWaveUniformLocations.add(glGetUniformLocation(_shaderProgramsPlaneWave.get(i), "time"));
-            _xOffsetPlaneWaveUniformLocations.add(glGetUniformLocation(_shaderProgramsPlaneWave.get(i), "xOffset"));
+            _lightPosPlaneWaveUniformLocations.add(glGetUniformLocation(_shaderProgramsPlaneWave.get(i), "lightPos"));
 
             // Sférické
             _timeTorusUniformLocations.add(glGetUniformLocation(_shaderProgramsTorus.get(i), "time"));
-            _xOffsetTorusUniformLocations.add(glGetUniformLocation(_shaderProgramsTorus.get(i), "xOffset"));
+            _lightPosTorusUniformLocations.add(glGetUniformLocation(_shaderProgramsTorus.get(i), "lightPos"));
 
-            _timeSphericalRandomUniformLocations.add(glGetUniformLocation(_shaderProgramsSphericalRandom.get(i), "time"));
-            _xOffsetSphericalRandomUniformLocations.add(glGetUniformLocation(_shaderProgramsSphericalRandom.get(i),
-                    "xOffset"));
+            _timeSphericalRandomUniformLocations
+                    .add(glGetUniformLocation(_shaderProgramsSphericalRandom.get(i), "time"));
+            _lightPosSphericalRandomUniformLocations.add(glGetUniformLocation(_shaderProgramsSphericalRandom.get(i),
+                    "lightPos"));
 
             // Cylindrické
             _timeCylindrical1UniformLocations.add(glGetUniformLocation(_shaderProgramsCylindrical1.get(i), "time"));
-            _xOffsetCylindrical1UniformLocations.add(glGetUniformLocation(_shaderProgramsCylindrical1.get(i), "xOffset"));
+            _lightPosCylindrical1UniformLocations
+                    .add(glGetUniformLocation(_shaderProgramsCylindrical1.get(i), "lightPos"));
 
             _timeCylindrical2UniformLocations.add(glGetUniformLocation(_shaderProgramsCylindrical2.get(i), "time"));
-            _xOffsetCylindrical2UniformLocations.add(glGetUniformLocation(_shaderProgramsCylindrical2.get(i), "xOffset"));
+            _lightPosCylindrical2UniformLocations
+                    .add(glGetUniformLocation(_shaderProgramsCylindrical2.get(i), "lightPos"));
         }
 
         // ============================== OBJEKTY ==============================
 
-        _skybox = new Cube(100f);
+        _light = new Cube(1f, new ArrayList<>(List.of(_shaderProgramDefault)));
+        _light.translate(-10f, 2f, 3f);
+        _light.rotate(10f, 0f, 1f, 0f);
+        _skybox = new Cube(100f, new ArrayList<>(List.of(_shaderProgramSkybox)));
+
+        _floor = new TriangleGrid(500, 500, 100, 100, _shaderProgramsFloor);
+        _floor.rotate(-90, 1, 0, 0);
+        _floor.translate(0, 0, -7);
 
         // --------- KARTÉZSKÉ ---------
         // Wave animation
-        _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40));
+        _waveAnimationObjects.add(new TriangleGrid(5f, 7f, 40, 40, _shaderProgramsWaveAnimation));
+        _waveAnimationObjects.get(0).translate(10f, 0f, 0f);
+        _waveAnimationObjects.get(0).rotate(-10, 0, 1, 0);
 
         // Plane wave
-        _planeWaveObjects.add(new TriangleGrid(1, 1, 100, 100));
+        _planeWaveObjects.add(new TriangleGrid(1, 1, 100, 100, _shaderProgramsPlaneWave));
+        _planeWaveObjects.get(0).translate(20f, 0f, 0f);
 
         // Triangle strip grid
         // _triangleStripObjects.add(new TriangleStripGrid(5f, 7f, 40, 40));
 
         // --------- SFÉRICKÉ ---------
         // Torus
-        _objects.add(new TriangleGrid(1, 2, 100, 100));
+        _objects.add(new TriangleGrid(1, 2, 100, 100, _shaderProgramsTorus));
+        _objects.get(0).translate(30f, 0f, 0f);
 
         // Spherical random
-        _sphericalRandom = new TriangleGrid(1, 2, 300, 300);
+        _sphericalRandom = new TriangleGrid(1, 2, 300, 300, _shaderProgramsSphericalRandom);
+        _sphericalRandom.translate(40f, 0f, 0f);
 
         // --------- CYLINDRICKÉ ---------
         // Spherical random
-        _cylindrical1 = new TriangleGrid(1, 2, 100, 100);
+        _cylindrical1 = new TriangleGrid(1, 2, 30, 30, _shaderProgramsCylindrical1);
+        _cylindrical1.translate(50f, 0f, 0f);
 
         // Spherical random
-        _cylindrical2 = new TriangleGrid(1, 2, 10, 100);
+        _cylindrical2 = new TriangleGrid(1, 2, 10, 100, _shaderProgramsCylindrical2);
+        _cylindrical2.translate(60f, 0f, 0f);
     }
 
     // Hlavní smyčka
@@ -306,6 +370,7 @@ public class App {
         float lastFrameTime = 0.0f;
 
         while (!glfwWindowShouldClose(_window)) {
+            Vector3f lightPos = _light.getTranslation();
 
             // Delta času
             float currentFrameTime = (float) glfwGetTime();
@@ -320,111 +385,130 @@ public class App {
             // Zpracování vstupů kamery
             _camera.processInputs(_window, deltaTime);
 
+            // ----------------------------- LIGHT -----------------------------
+            glUseProgram(_shaderProgramDefault);
+            glUniform1f(_timeSkyboxUniformLocation, currentFrameTime);
+            // Nastavení kamery - předání matic do shaderu
+            _camera.setCameraMatrixIntoShader(_shaderProgramDefault);
+            // Vykreslení objektu
+            _light.draw(GL_TRIANGLES, _shaderProgramDefault);
+
             // ----------------------------- SKYBOX -----------------------------
             glUseProgram(_shaderProgramSkybox);
             glUniform1f(_timeSkyboxUniformLocation, currentFrameTime);
             // Nastavení kamery - předání matic do shaderu
             _camera.setCameraViewAndProjectionIntoShader(_shaderProgramSkybox);
             // Vykreslení objektu
-            _skybox.draw(GL_TRIANGLES);
+            _skybox.draw(GL_TRIANGLES, _shaderProgramSkybox);
+
+            // ----------------------------- FLOOR -----------------------------
+            glUseProgram(_shaderProgramsFloor.get(_shaderMode));
+            _camera.setCameraMatrixIntoShaderWithCustomFarPlane(_shaderProgramsFloor.get(_shaderMode), 1000.0f);
+            glUniform3f(_lightPosFloorUniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
+            // Vykreslení objektu
+            drawMesh(_floor, _shaderProgramsFloor.get(_shaderMode));
+
+            // ----------------------------- WAVE ANIMATION -----------------------------
+            glUseProgram(_shaderProgramsWaveAnimation.get(_shaderMode));
+            glUniform1f(_timeWaveAnimationUniformLocations.get(_shaderMode), currentFrameTime);
+            glUniform3f(_lightPosWaveAnimationUniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
+
+            _camera.setCameraMatrixIntoShader(_shaderProgramsWaveAnimation.get(_shaderMode));
+
+            // Vykreslení objektů které používají WaveAnimation shader
+            for (Mesh mesh : _waveAnimationObjects) {
+                drawMesh(mesh, _shaderProgramsWaveAnimation.get(_shaderMode));
+            }
+
+            // ----------------------------- PlANE WAVE -----------------------------
+            glUseProgram(_shaderProgramsPlaneWave.get(_shaderMode));
+            // Pošle uniformy do aktivního shaderu
+            glUniform1f(_timePlaneWaveUniformLocations.get(_shaderMode), currentFrameTime);
+            glUniform3f(_lightPosPlaneWaveUniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
+
+            _camera.setCameraMatrixIntoShader(_shaderProgramsPlaneWave.get(_shaderMode));
+            // Nastavení kamery - předání matic do shaderu
+            // Vykreslení objektů
+            for (Mesh mesh : _planeWaveObjects) {
+                drawMesh(mesh, _shaderProgramsPlaneWave.get(_shaderMode));
+            }
 
             // ----------------------------- TORUS -----------------------------
 
             glUseProgram(_shaderProgramsTorus.get(_shaderMode));
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeTorusUniformLocations.get(_shaderMode), currentFrameTime);
-            glUniform1f(_xOffsetTorusUniformLocations.get(_shaderMode), 20f);
+            glUniform3f(_lightPosTorusUniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
 
             // Nastavení kamery - předání matic do shaderu
             _camera.setCameraMatrixIntoShader(_shaderProgramsTorus.get(_shaderMode));
 
             // Vykreslení objektů
             for (Mesh mesh : _objects) {
-                drawMesh(mesh);
+                // mesh.translate(0f, 0f, 1f);
+                drawMesh(mesh, _shaderProgramsTorus.get(_shaderMode));
             }
 
             // ----------------------------- SPHERICAL RANDOM -----------------------------
             glUseProgram(_shaderProgramsSphericalRandom.get(_shaderMode));
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeSphericalRandomUniformLocations.get(_shaderMode), currentFrameTime);
-            glUniform1f(_xOffsetSphericalRandomUniformLocations.get(_shaderMode), 30f);
+            glUniform3f(_lightPosSphericalRandomUniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
 
             // Nastavení kamery - předání matic do shaderu
             _camera.setCameraMatrixIntoShader(_shaderProgramsSphericalRandom.get(_shaderMode));
 
             // Vykreslení objektu
-            drawMesh(_sphericalRandom);
+            drawMesh(_sphericalRandom, _shaderProgramsSphericalRandom.get(_shaderMode));
 
             // ----------------------------- CYLINDRICAL1 -----------------------------
             glUseProgram(_shaderProgramsCylindrical1.get(_shaderMode));
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeCylindrical1UniformLocations.get(_shaderMode), currentFrameTime);
-            glUniform1f(_xOffsetCylindrical1UniformLocations.get(_shaderMode), 40f);
+            glUniform3f(_lightPosCylindrical1UniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
 
             // Nastavení kamery - předání matic do shaderu
             _camera.setCameraMatrixIntoShader(_shaderProgramsCylindrical1.get(_shaderMode));
 
             // Vykreslení objektu
-            drawMesh(_cylindrical1);
+            drawMesh(_cylindrical1, _shaderProgramsCylindrical1.get(_shaderMode));
 
             // ----------------------------- CYLINDRICAL2 -----------------------------
             glUseProgram(_shaderProgramsCylindrical2.get(_shaderMode));
             // Pošle uniformy do aktivního shaderu
             glUniform1f(_timeCylindrical2UniformLocations.get(_shaderMode), currentFrameTime);
-            glUniform1f(_xOffsetCylindrical2UniformLocations.get(_shaderMode), 50f);
+            glUniform3f(_lightPosCylindrical2UniformLocations.get(_shaderMode), lightPos.x, lightPos.y, lightPos.z);
 
             // Nastavení kamery - předání matic do shaderu
             _camera.setCameraMatrixIntoShader(_shaderProgramsCylindrical2.get(_shaderMode));
 
             // Vykreslení objektu
-            drawMesh(_cylindrical2);
-
-            // ----------------------------- PlANE WAVE -----------------------------
-            glUseProgram(_shaderProgramsPlaneWave.get(_shaderMode));
-            // Pošle uniformy do aktivního shaderu
-            glUniform1f(_timePlaneWaveUniformLocations.get(_shaderMode), currentFrameTime);
-            glUniform1f(_xOffsetPlaneWaveUniformLocations.get(_shaderMode), 10f);
-
-            _camera.setCameraMatrixIntoShader(_shaderProgramsPlaneWave.get(_shaderMode));
-            // Nastavení kamery - předání matic do shaderu
-            // Vykreslení objektů
-            for (Mesh mesh : _objects) {
-                drawMesh(mesh);
-            }
+            drawMesh(_cylindrical2, _shaderProgramsCylindrical2.get(_shaderMode));
 
             // Vykreslení objektů typu GL_TRIANGLE_STRIP
             for (Mesh mesh : _triangleStripObjects) {
-                drawMesh(mesh);
+                drawMesh(mesh, _shaderProgramDefault);
                 if (_drawTriangleStrips) {
-                    mesh.draw(GL_TRIANGLE_STRIP);
+                    mesh.draw(GL_TRIANGLE_STRIP, _shaderProgramDefault);
                 } // Pro vykreslení triangle strips
-            }
-
-            // WAVE ANIMATION
-            glUseProgram(_shaderProgramsWaveAnimation.get(_shaderMode));
-            glUniform1f(_timeWaveAnimationUniformLocations.get(_shaderMode), currentFrameTime);
-            _camera.setCameraMatrixIntoShader(_shaderProgramsWaveAnimation.get(_shaderMode));
-
-            // Vykreslení objektů které používají WaveAnimation shader
-            for (Mesh mesh : _waveAnimationObjects) {
-                drawMesh(mesh);
             }
 
             // Přepínání bufferů
             glfwSwapBuffers(_window);
             glfwPollEvents();
         }
+
     }
 
-    private void drawMesh(Mesh mesh) {
+    private void drawMesh(Mesh mesh, int shaderProgramID) {
         if (_drawTriangles) {
-            mesh.draw(GL_TRIANGLES);
+            mesh.draw(GL_TRIANGLES, shaderProgramID);
         } // Pro plné trojúhelníky
         if (_drawLines) {
-            mesh.draw(GL_LINES);
+            mesh.draw(GL_LINES, shaderProgramID);
         } // Pro vykreslení hran
         if (_drawPoints) {
-            mesh.draw(GL_POINTS);
+            mesh.draw(GL_POINTS, shaderProgramID);
         } // Pro vykreslení bodů
     }
 
@@ -458,8 +542,8 @@ public class App {
         });
     }
 
-    private void changeShaderMode(int how){
-        int newMode = _shaderMode+how;
+    private void changeShaderMode(int how) {
+        int newMode = _shaderMode + how;
         if (newMode < 0 || newMode > _shaderModeMax) {
             return;
         }

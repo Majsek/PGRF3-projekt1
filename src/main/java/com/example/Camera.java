@@ -3,8 +3,25 @@ package com.example;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.joml.Vector2f;
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_C;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
+import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
+import static org.lwjgl.glfw.GLFW.glfwGetKey;
+import static org.lwjgl.glfw.GLFW.glfwGetMouseButton;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
+import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import org.lwjgl.opengl.GL20;
 
 public class Camera {
@@ -12,7 +29,7 @@ public class Camera {
     private Vector3f _orientation;
     private Vector3f _up;
 
-    private float _speed = 1.0f;
+    private float _speed = 5.0f;
     private float _sensitivity = 0.5f;
 
     private boolean _clickedIn = false;
@@ -32,7 +49,7 @@ public class Camera {
         _height = height;
         calculatePerspectiveProjection();
         calculateOrthogonalProjection();
-        
+
         _projection = _perspectiveProjection;
         _isPerspectiveProjection = true;
     }
@@ -45,8 +62,31 @@ public class Camera {
         view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
 
         // Odeslání matice do shaderu
-        int uniformLocation = GL20.glGetUniformLocation(shader, "camMatrix");
-        GL20.glUniformMatrix4fv(uniformLocation, false, projection.mul(view).get(new float[16]));
+        int uniformCamMatrixLocation = GL20.glGetUniformLocation(shader, "camMatrix");
+        GL20.glUniformMatrix4fv(uniformCamMatrixLocation, false, projection.mul(view).get(new float[16]));
+
+        int uniformViewPosLocation = GL20.glGetUniformLocation(shader, "viewPos");
+        GL20.glUniform3f(uniformViewPosLocation, _position.x, _position.y, _position.z);
+    }
+
+    public void setCameraMatrixIntoShaderWithCustomFarPlane(int shader, float farPlane) {
+        Matrix4f view = new Matrix4f();
+        Matrix4f projection = new Matrix4f();
+
+        float FOVdeg = 70f;
+        float nearPlane = 0.1f;
+
+        // Nastaví kameru, aby se dívala správným směrem
+        view.lookAt(_position, _position.add(_orientation, new Vector3f()), _up);
+
+        projection.perspective((float) Math.toRadians(FOVdeg), (float) _width / _height, nearPlane, farPlane);
+
+        // Odeslání matice do shaderu
+        int uniformCamMatrixLocation = GL20.glGetUniformLocation(shader, "camMatrix");
+        GL20.glUniformMatrix4fv(uniformCamMatrixLocation, false, projection.mul(view).get(new float[16]));
+
+        int uniformViewPosLocation = GL20.glGetUniformLocation(shader, "viewPos");
+        GL20.glUniform3f(uniformViewPosLocation, _position.x, _position.y, _position.z);
     }
 
     public void setCameraViewAndProjectionIntoShader(int shader) {
@@ -68,6 +108,9 @@ public class Camera {
         int uniformLocationProjection = GL20.glGetUniformLocation(shader, "projection");
         GL20.glUniformMatrix4fv(uniformLocationView, false, view.get(new float[16]));
         GL20.glUniformMatrix4fv(uniformLocationProjection, false, projection.get(new float[16]));
+
+        int uniformViewPosLocation = GL20.glGetUniformLocation(shader, "viewPos");
+        GL20.glUniform3f(uniformViewPosLocation, _position.x, _position.y, _position.z);
     }
 
     public void processInputs(long window, float deltaTime) {
@@ -105,7 +148,7 @@ public class Camera {
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
             _speed = 15.0f;
         } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
-            _speed = 1.0f;
+            _speed = 5.0f;
         }
 
         // Přepnutí orthogonální projekce
@@ -114,7 +157,6 @@ public class Camera {
             _isPerspectiveProjection = !_isPerspectiveProjection;
         }
         _cKeyPressedLastFrame = glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS;
-        
 
         // Ovládání myši
         handleMouseInput(window);
